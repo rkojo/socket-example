@@ -1,19 +1,15 @@
 public class Server {
   String type;
-  int limit;
-  int bootupTime;
-  Double hourlyRate;
+  int id;
+  String state;
+  int curstarttime;
   int cores;
   int memory;
   int disk;
+  int wjobs;
+  int rjobs;
 
-  public Server(String t, int l, int b, Double h, int c, int m, int d) {
-    type = t;
-    limit = l;
-    bootupTime = b;
-    hourlyRate = h;
-    cores = c;
-    memory = m;
-    disk = d;
+  public Server() {
+
   }
 }

@@ -31,12 +31,24 @@ public class client {
         String s;
         recieve = br.readLine();
         System.out.println(recieve);
-        s = "GETS capable" + jobvalue(recieve) + "\n";
+        //sends getscapable
+        String job = jobid(recieve);
+        s = "GETS Capable " + jobvalue(recieve);
         dos.write(s.getBytes());
         dos.flush();
         recieve = br.readLine();
-        s = getsCapable(recieve);
-
+        int serverno = howMany(recieve);
+        s = "OK\n";
+        dos.write(s.getBytes());
+        dos.flush();
+        //only reads a single line - need to loop and store server info into arraylist here. 
+        recieve = br.readLine();
+        System.out.println("all " + recieve);
+        String ret = getsCapable(recieve, serverno);
+        //once it keeps and finds the best one, it should schd.
+        s = "SCHD " + job + ret + "\n";
+        //once i get server info, 
+        //loop until i get ".", then schedule to server
       }
 
       dos.write("QUIT\n".getBytes());
@@ -59,41 +71,63 @@ public class client {
   public static String jobvalue(String s) {
     String[] a;
     a = s.split(" ", 0);
-    return a[4] + a[5] + a[6];
+    return a[4]+" " + a[5]+" " + a[6] + "\n";
+  }
+  public static String jobid(String s) {
+    String[] a;
+    a = s.split(" ");
+    return a[2];
   }
 
-  public static String getsCapable(String s) {
+  public static int howMany(String s) {
     String[] a;
-    Server j;
+    a = s.split(" ");
+    return Integer.parseInt(a[2]);
+  }
+  public static String getsCapable(String s, int servercount) {
+    String[] a;
+    Server j = new Server();
     ArrayList<Server> aj = new ArrayList<Server>();
-    while (!s.equals(".")) {
-      a = s.split(" ", 0);
-      a[0] = j.type;
-      // get limit
-      String l = a[1];
+    int count = 0;
+    while (count < servercount) {
+          //joon 0 inactive -1 4 16000 64000 0 0
+      a = s.split(" ");
+      a[count] = j.type;
+      System.out.println("name = " + j.type);
+      // get id
+      String l = a[count+ 1];
+      System.out.println("limit = " + l);
       Integer la = Integer.parseInt(l);
-      j.limit = la;
-      // get bootuptime
-      l = a[2];
-      j.bootupTime = Integer.parseInt(l);
-      // get hourlyRate (double)
-      l = a[3];
-      Double da = Double.parseDouble(l);
-      j.hourlyRate = da;
+      j.id = la;
+      // get curstarttime
+      l = a[count + 3];
+      System.out.println("bootuptime = " + l);
+      j.curstarttime= Integer.parseInt(l);
       // get cores
-      l = a[4];
+      l = a[count + 4];
+      System.out.println("cores = " + l);
       j.cores = Integer.parseInt(l);
       // get memory
-      l = a[5];
+      l = a[count + 5];
+      System.out.println("memory = " + l);
       j.memory = Integer.parseInt(l);
       // get disk
-      l = a[6];
+      l = a[count + 6];
+      System.out.println("disk = " + l);
       j.disk = Integer.parseInt(l);
       aj.add(j);
+        count++;
+    }
+    //need to make into separate method after readlingall the lines.
+    Server first = aj.get(0);
+    for(int i = 1; i <aj.size(); i++) {
+      if(aj.get(i).cores > first.cores) {
+        first = aj.get(i);
+      }
     }
     // return capable server string
 
-    return;
+    return first.type + String.valueOf(first.id);
 
   }
 }
