@@ -24,35 +24,56 @@ public class client {
       recieve = br.readLine();
       System.out.println(recieve);
 
-      while (!recieve.equals("QUIT")) {
+      while (recieve.compareTo("NONE") != 0) {
+        //step 5
         dos.write("REDY\n".getBytes());
         dos.flush();
-        // get job values
+        // get step 6
         String s;
         recieve = br.readLine();
-        System.out.println(recieve);
-        //sends getscapable
+        if(getcommand(recieve).compareTo("JCPL") == 0) {
+          while(getcommand(recieve).compareTo("JCPL") == 0) {
+            dos.write("REDY\n".getBytes());
+            dos.flush();
+            recieve = br.readLine();
+          }
+        }
+        if(recieve.compareTo("NONE") == 0) {
+          dos.write("QUIT\n".getBytes());
+          dos.flush();
+          break;
+        }
+        System.out.println("job " + recieve + "value");
         String job = jobid(recieve); // gets id of job in jobn
+        //step 7
         s = "GETS Capable " + jobvalue(recieve) +"\n";
         dos.write(s.getBytes());
         dos.flush();
-        //recieves data 3 124
+        //step 8
         recieve = br.readLine();
         int howm = howMany(recieve);
+        System.out.println(howm);
+        //step 9
         String bestserver = getsCapable(dos, br, howm);
-        //once it keeps and finds the best one, it should schd.
-        // s = "OK\n";
-        // dos.write(s.getBytes());
+        //step 11
+        s = "OK\n";
+        dos.write(s.getBytes());
         dos.flush();
         recieve = br.readLine();
+        //step 7
         s = "SCHD " + job + " " + bestserver + "\n";
         dos.write(s.getBytes());
         dos.flush();
-        //once i get server info, 
-        //loop until i get ".", then schedule to server
+        recieve = br.readLine();
+        // s = "OK\n"; //step 6
+        // dos.write(s.getBytes());
+        // dos.flush();
+        // recieve = br.readLine();
+      //   recieve = br.readLine();
+      //   System.out.println("last msg" + recieve);
       }
-      dos.write("QUIT\n".getBytes());
-      dos.flush();
+      // dos.write("QUIT\n".getBytes());
+      // dos.flush();
 
       String recfinal = br.readLine();
       System.out.println(recfinal);
@@ -68,21 +89,30 @@ public class client {
 
   }
 
+  //used to return to detect jcpl
+  public static String getcommand(String s) {
+    String[] a;
+    a = s.split(" ");
+    return a[0];
+  }
+
+  //used to find value to use in gets command
   public static String jobvalue(String s) {
     String[] a;
     a = s.split(" ", 0);
     return a[4]+" " + a[5]+" " + a[6] + "\n";
   }
+  //used to find the id to use to schedule
   public static String jobid(String s) {
     String[] a;
     a = s.split(" ");
     return a[2];
   }
-
+  //used for loop in gets command
   public static int howMany(String s) {
     String[] a;
     a = s.split(" ");
-    return Integer.parseInt(a[2]);
+    return Integer.parseInt(a[1]);
   }
   public static String getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
     String[] a;
@@ -91,11 +121,14 @@ public class client {
     dos.write("OK\n".getBytes());
     dos.flush();
     String recieve = new String();
-    boolean barrier = true;
-    while(barrier) {
+    int count = 0;
+    System.out.println(servercount);
+    // boolean barrier = true;
+    // while(barrier) {
+      //recieve = br.readLine();
+    while (count < servercount){
       recieve = br.readLine();
-     if (!recieve.equals(".")) {
-      System.out.println(recieve);
+      System.out.println("value" + recieve);
           //joon 0 inactive -1 4 16000 64000 0 0
       a = recieve.split(" ");
       System.out.println(a[0] + a[1]);
@@ -123,13 +156,11 @@ public class client {
       System.out.println("disk = " + l);
       j.disk = Integer.parseInt(l);
       aj.add(j);
-    } else {
-      System.out.print(recieve);
-      barrier = false;
-    }
-    dos.write("OK\n".getBytes());
-    dos.flush();
-  }
+      count++;
+      //recieve = br.readLine();  
+     }
+
+  
     //need to make into separate method after readlingall the lines. 
     Server first = aj.get(0);
     for(int i = 1; i <aj.size(); i++) {
@@ -138,7 +169,6 @@ public class client {
       }
     }
     // return capable server string
-
     return first.type + " "+ String.valueOf(first.id);
 
   }
