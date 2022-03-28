@@ -1,4 +1,6 @@
-public class Server {
+import java.util.ArrayList;
+
+public class Server{
   String type;
   int id;
   String state;

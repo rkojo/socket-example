@@ -23,7 +23,7 @@ public class client {
 
       recieve = br.readLine();
       System.out.println(recieve);
-
+      int count = 0;
       while (recieve.compareTo("NONE") != 0) {
         //step 5
         dos.write("REDY\n".getBytes());
@@ -54,7 +54,23 @@ public class client {
         int howm = howMany(recieve);
         System.out.println(howm);
         //step 9
-        String bestserver = getsCapable(dos, br, howm);
+        ArrayList<Server> list = getsCapable(dos, br, howm);
+        // Server[] sortedList;
+        // sortedList = getBest(list);
+        // String bestserver = sortedList[count].state + " " + sortedList[count].id;
+
+        //need to get other servers to work.
+        String bestserver = list.get(count).type + " " +  list.get(count).id;
+        if(list.get(count).wjobs > 0) {
+          count++;
+          bestserver = list.get(count).type + " " + list.get(count).id;
+        } else {
+          count++;
+        }
+        System.out.println("count = " + count);
+        if(count == list.size()-1) {
+          count = 0;
+        }
         //step 11
         s = "OK\n";
         dos.write(s.getBytes());
@@ -114,7 +130,7 @@ public class client {
     a = s.split(" ");
     return Integer.parseInt(a[1]);
   }
-  public static String getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
+  public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
     String[] a;
     Server j = new Server();
     ArrayList<Server> aj = new ArrayList<Server>();
@@ -155,21 +171,43 @@ public class client {
       l = a[6];
       System.out.println("disk = " + l);
       j.disk = Integer.parseInt(l);
+      l = a[7];
+      j.wjobs = Integer.parseInt(l);
+      l = a[7];
+      j.rjobs = Integer.parseInt(l);
       aj.add(j);
       count++;
-      //recieve = br.readLine();  
      }
-
-  
-    //need to make into separate method after readlingall the lines. 
-    Server first = aj.get(0);
-    for(int i = 1; i <aj.size(); i++) {
-      if(aj.get(i).cores > first.cores) {
-        first = aj.get(i);
+     for(int i = 0;i < aj.size(); i++) {
+      for(int k = 1; k < aj.size(); k++) {
+        Server temp = new Server();
+        if(aj.get(i).cores < aj.get(k).cores) {
+          temp = aj.get(i);
+          aj.set(i, aj.get(k));
+          aj.set(k, temp);
+        }
       }
     }
-    // return capable server string
-    return first.type + " "+ String.valueOf(first.id);
+    // return list
+    return aj;
 
+  }
+  public static Server[] getBest(ArrayList<Server> a)  {
+    Server[] slist = new Server[a.size()];
+    for(int i = 0; i<a.size(); i++) {
+      slist[i] = a.get(i);
+    }
+    for(int i = 0;i < slist.length; i++) {
+      for(int j = 1; j<slist.length; j++) {
+        Server temp;
+        if(slist[i].cores < slist[j].cores) {
+          temp = slist[i];
+          slist[i] = slist[j];
+          slist[j] = temp;
+        }
+      }
+    }
+    System.out.println("getorder" + slist[0].state);
+    return slist;
   }
 }
