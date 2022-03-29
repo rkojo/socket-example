@@ -1,11 +1,9 @@
-import java.util.ArrayList;
-
 public class Server{
   String type;
-  int id;
+  Integer id;
   String state;
   int curstarttime;
-  int cores;
+  Integer cores;
   int memory;
   int disk;
   int wjobs;
@@ -14,4 +12,5 @@ public class Server{
   public Server() {
 
   }
+
 }

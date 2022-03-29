@@ -2,16 +2,17 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
-import javax.swing.text.Document;
 
 public class client {
   public static void main(String args[]) {
 
+    serverArray serverArr = new serverArray();
     try {
       Socket socket = new Socket("127.0.0.1", 50000);
       DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
       // DataInputStream dis = new DataInputStream(socket.getInputStream());
       BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+     
       dos.write("HELO\n".getBytes());
       dos.flush();
 
@@ -24,6 +25,7 @@ public class client {
       recieve = br.readLine();
       System.out.println(recieve);
       int count = 0;
+      int countToStore = 0; //used to see if the loop has not looped before. used to store values into serverArray
       while (recieve.compareTo("NONE") != 0) {
         //step 5
         dos.write("REDY\n".getBytes());
@@ -43,7 +45,7 @@ public class client {
           dos.flush();
           break;
         }
-        System.out.println("job " + recieve + "value");
+        System.out.println("job " + recieve);
         String job = jobid(recieve); // gets id of job in jobn
         //step 7
         s = "GETS Capable " + jobvalue(recieve) +"\n";
@@ -55,20 +57,14 @@ public class client {
         System.out.println(howm);
         //step 9
         ArrayList<Server> list = getsCapable(dos, br, howm);
-        // Server[] sortedList;
-        // sortedList = getBest(list);
-        // String bestserver = sortedList[count].state + " " + sortedList[count].id;
-
-        //need to get other servers to work.
-        String bestserver = list.get(count).type + " " +  list.get(count).id;
-        if(list.get(count).wjobs > 0) {
-          count++;
-          bestserver = list.get(count).type + " " + list.get(count).id;
-        } else {
-          count++;
+        //on the first loop, it saves the servers with the biggest values.
+        if(countToStore == 0) {
+        serverArr.servers = bigAmount(list);
         }
-        System.out.println("count = " + count);
-        if(count == list.size()-1) {
+        String bestserver = serverArr.returnValue(count) + " " +  serverArr.returnInt(count);
+        count++;
+        countToStore++;
+        if(count >= serverArr.size()) {
           count = 0;
         }
         //step 11
@@ -81,15 +77,7 @@ public class client {
         dos.write(s.getBytes());
         dos.flush();
         recieve = br.readLine();
-        // s = "OK\n"; //step 6
-        // dos.write(s.getBytes());
-        // dos.flush();
-        // recieve = br.readLine();
-      //   recieve = br.readLine();
-      //   System.out.println("last msg" + recieve);
       }
-      // dos.write("QUIT\n".getBytes());
-      // dos.flush();
 
       String recfinal = br.readLine();
       System.out.println(recfinal);
@@ -132,44 +120,45 @@ public class client {
   }
   public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
     String[] a;
-    Server j = new Server();
+    
     ArrayList<Server> aj = new ArrayList<Server>();
     dos.write("OK\n".getBytes());
     dos.flush();
     String recieve = new String();
     int count = 0;
-    System.out.println(servercount);
     // boolean barrier = true;
     // while(barrier) {
       //recieve = br.readLine();
-    while (count < servercount){
+    while (count < servercount) {
       recieve = br.readLine();
+      Server j = new Server();
+      System.out.println("count loop = " + count);
       System.out.println("value" + recieve);
           //joon 0 inactive -1 4 16000 64000 0 0
       a = recieve.split(" ");
       System.out.println(a[0] + a[1]);
       j.type = a[0];
-      System.out.println("name = " + j.type);
+      //System.out.println("name = " + j.type);
       // get id
       String l = a[1];
-      System.out.println("id = " + l);
+      //System.out.println("id = " + l);
       Integer la = Integer.parseInt(l);
       j.id = la;
       // get curstarttime
       l = a[3];
-      System.out.println("bootuptime = " + l);
+      //System.out.println("bootuptime = " + l);
       j.curstarttime= Integer.parseInt(l);
       // get cores
       l = a[4];
-      System.out.println("cores = " + l);
+      //System.out.println("cores = " + l);
       j.cores = Integer.parseInt(l);
       // get memory
       l = a[5];
-      System.out.println("memory = " + l);
+      //System.out.println("memory = " + l);
       j.memory = Integer.parseInt(l);
       // get disk
       l = a[6];
-      System.out.println("disk = " + l);
+      //System.out.println("disk = " + l);
       j.disk = Integer.parseInt(l);
       l = a[7];
       j.wjobs = Integer.parseInt(l);
@@ -178,36 +167,30 @@ public class client {
       aj.add(j);
       count++;
      }
-     for(int i = 0;i < aj.size(); i++) {
-      for(int k = 1; k < aj.size(); k++) {
-        Server temp = new Server();
-        if(aj.get(i).cores < aj.get(k).cores) {
-          temp = aj.get(i);
-          aj.set(i, aj.get(k));
-          aj.set(k, temp);
-        }
-      }
-    }
+
+    aj.sort(new serverCompare());
+    //for(int i = aj.size()-1; i>= 0)
+    // for(int i = 0; i<aj.size(); i++) {
+    //   System.out.println("list "+ i+ "=" +aj.get(i).type + aj.get(i).id + aj.get(i).cores);
+    // }
+
     // return list
     return aj;
 
   }
-  public static Server[] getBest(ArrayList<Server> a)  {
-    Server[] slist = new Server[a.size()];
-    for(int i = 0; i<a.size(); i++) {
-      slist[i] = a.get(i);
-    }
-    for(int i = 0;i < slist.length; i++) {
-      for(int j = 1; j<slist.length; j++) {
-        Server temp;
-        if(slist[i].cores < slist[j].cores) {
-          temp = slist[i];
-          slist[i] = slist[j];
-          slist[j] = temp;
-        }
+  //find largest amount of servers for LRR
+  public static ArrayList<Server> bigAmount(ArrayList<Server> a) {
+    ArrayList<Server> newA = new ArrayList<>();
+    newA.add(a.get(0));
+    for(int i = 1; i<a.size(); i++) {
+      if(a.get(0).cores == a.get(i).cores) {
+        newA.add(a.get(i));
+        System.out.println("values in newlist" + a.get(i).type);
       }
     }
-    System.out.println("getorder" + slist[0].state);
-    return slist;
+    return newA;
+  }
+  public static final Server getBest(ArrayList<Server> a) {
+    return a.get(0);
   }
 }
