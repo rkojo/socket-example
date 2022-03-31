@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class client {
   public static void main(String args[]) {
-
+    //used to store the values of the biggest servers and keeps them even when looping. 
     serverArray serverArr = new serverArray();
     try {
       Socket socket = new Socket("127.0.0.1", 50000);
@@ -17,15 +17,14 @@ public class client {
       dos.flush();
 
       String recieve = br.readLine();
-      System.out.println(recieve);
-
-      dos.write("AUTH Riku\n".getBytes());
+      //authentication 
+      dos.write("AUTH riku\n".getBytes());
       dos.flush();
 
       recieve = br.readLine();
-      System.out.println(recieve);
+      //System.out.println(recieve);
       int count = 0;
-      int countToStore = 0; //used to see if the loop has not looped before. used to store values into serverArray
+      boolean toStore = true; //used to see if the loop has not looped before. used to store values into serverArray
       while (recieve.compareTo("NONE") != 0) {
         //step 5
         dos.write("REDY\n".getBytes());
@@ -33,6 +32,7 @@ public class client {
         // get step 6
         String s;
         recieve = br.readLine();
+        //jcpl tells status of job, so it should loop until all jobs are done. 
         if(getcommand(recieve).compareTo("JCPL") == 0) {
           while(getcommand(recieve).compareTo("JCPL") == 0) {
             dos.write("REDY\n".getBytes());
@@ -40,12 +40,13 @@ public class client {
             recieve = br.readLine();
           }
         }
+        //if the value is none, it quits and breaks out of loop.
         if(recieve.compareTo("NONE") == 0) {
           dos.write("QUIT\n".getBytes());
           dos.flush();
           break;
         }
-        System.out.println("job " + recieve);
+        //System.out.println("job " + recieve);
         String job = jobid(recieve); // gets id of job in jobn
         //step 7
         s = "GETS Capable " + jobvalue(recieve) +"\n";
@@ -54,16 +55,16 @@ public class client {
         //step 8
         recieve = br.readLine();
         int howm = howMany(recieve);
-        System.out.println(howm);
+        //System.out.println(howm);
         //step 9
         ArrayList<Server> list = getsCapable(dos, br, howm);
         //on the first loop, it saves the servers with the biggest values.
-        if(countToStore == 0) {
-        serverArr.servers = bigAmount(list);
+        if(toStore == true) {
+          serverArr.servers = bigAmount(list);
         }
         String bestserver = serverArr.returnValue(count) + " " +  serverArr.returnInt(count);
         count++;
-        countToStore++;
+        toStore = false;
         if(count >= serverArr.size()) {
           count = 0;
         }
@@ -78,9 +79,8 @@ public class client {
         dos.flush();
         recieve = br.readLine();
       }
-
+      //reads final value.
       String recfinal = br.readLine();
-      System.out.println(recfinal);
       if (recfinal.equals("QUIT")) {
         dos.close();
         socket.close();
@@ -100,43 +100,41 @@ public class client {
     return a[0];
   }
 
-  //used to find value to use in gets command
+  //used to find job requirement for core, disk and memory to use in GETS capable 
   public static String jobvalue(String s) {
     String[] a;
     a = s.split(" ", 0);
     return a[4]+" " + a[5]+" " + a[6] + "\n";
   }
-  //used to find the id to use to schedule
+  //used to find the id of the job to use to schedule jobs. 
   public static String jobid(String s) {
     String[] a;
     a = s.split(" ");
     return a[2];
   }
-  //used for loop in gets command
+
+  //sees how many capable servers to use in the getscapable loop. 
   public static int howMany(String s) {
     String[] a;
     a = s.split(" ");
     return Integer.parseInt(a[1]);
   }
+
+  //used to get the list of available servers.
   public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
     String[] a;
-    
     ArrayList<Server> aj = new ArrayList<Server>();
     dos.write("OK\n".getBytes());
     dos.flush();
     String recieve = new String();
     int count = 0;
-    // boolean barrier = true;
-    // while(barrier) {
-      //recieve = br.readLine();
     while (count < servercount) {
       recieve = br.readLine();
       Server j = new Server();
-      System.out.println("count loop = " + count);
-      System.out.println("value" + recieve);
-          //joon 0 inactive -1 4 16000 64000 0 0
+      // comes out like this = joon 0 inactive -1 4 16000 64000 0 0
+      //parse the values into pieces. 
       a = recieve.split(" ");
-      System.out.println(a[0] + a[1]);
+      //System.out.println(a[0] + a[1]);
       j.type = a[0];
       //System.out.println("name = " + j.type);
       // get id
@@ -167,30 +165,27 @@ public class client {
       aj.add(j);
       count++;
      }
-
-    aj.sort(new serverCompare());
-    //for(int i = aj.size()-1; i>= 0)
-    // for(int i = 0; i<aj.size(); i++) {
-    //   System.out.println("list "+ i+ "=" +aj.get(i).type + aj.get(i).id + aj.get(i).cores);
-    // }
-
     // return list
     return aj;
 
   }
   //find largest amount of servers for LRR
   public static ArrayList<Server> bigAmount(ArrayList<Server> a) {
-    ArrayList<Server> newA = new ArrayList<>();
-    newA.add(a.get(0));
+    //get the biggest core value and stores into temp. Should only be the first value as it is not <=
+    Server temp = a.get(0);
     for(int i = 1; i<a.size(); i++) {
-      if(a.get(0).cores == a.get(i).cores) {
-        newA.add(a.get(i));
-        System.out.println("values in newlist" + a.get(i).type);
+      if(temp.cores < a.get(i).cores) {
+        temp = a.get(i);
       }
     }
-    return newA;
-  }
-  public static final Server getBest(ArrayList<Server> a) {
-    return a.get(0);
+    //stores the values of the same type server into list. 
+    //Uses type instead of cores as it could get different server but same core count. 
+    ArrayList<Server> newaj = new ArrayList<Server>();
+    for(int i = 0; i<a.size(); i++) {
+      if(temp.type.equals(a.get(i).type)) {
+        newaj.add(a.get(i));
+      }
+    }
+    return newaj;
   }
 }
