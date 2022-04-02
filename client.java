@@ -22,9 +22,10 @@ public class client {
       dos.flush();
 
       recieve = br.readLine();
-      //System.out.println(recieve);
       int count = 0;
-      boolean toStore = true; //used to see if the loop has not looped before. used to store values into serverArray
+      //used to see if the loop has not looped before. used to store values into serverArray
+      boolean toStore = true;
+      //if none, the whole thing is completed. 
       while (recieve.compareTo("NONE") != 0) {
         //step 5
         dos.write("REDY\n".getBytes());
@@ -46,34 +47,37 @@ public class client {
           dos.flush();
           break;
         }
-        //System.out.println("job " + recieve);
         String job = jobid(recieve); // gets id of job in jobn
-        //step 7
-        s = "GETS Capable " + jobvalue(recieve) +"\n";
-        dos.write(s.getBytes());
-        dos.flush();
-        //step 8
-        recieve = br.readLine();
-        int howm = howMany(recieve);
-        //System.out.println(howm);
-        //step 9
-        ArrayList<Server> list = getsCapable(dos, br, howm);
+
         //on the first loop, it saves the servers with the biggest values.
+        //this only needs to happen once as it keeps the server data at the end in serverArr
         if(toStore == true) {
+          //step 7
+          s = "GETS Capable " + jobvalue(recieve) +"\n";
+          dos.write(s.getBytes());
+          dos.flush();
+          //gets the amount of servers
+          recieve = br.readLine();
+          int howm = howMany(recieve);
+          //step 9 - gets the list of servers.
+          ArrayList<Server> list = getsCapable(dos, br, howm);
+          s = "OK\n";
+          dos.write(s.getBytes());
+          dos.flush();
+          recieve = br.readLine();
+          //stores the best servers only. 
           serverArr.servers = bigAmount(list);
         }
+        toStore = false;
+        //the best server possible and the id of the server. 
         String bestserver = serverArr.returnValue(count) + " " +  serverArr.returnInt(count);
         count++;
-        toStore = false;
+        //used to ensure that it server id does not go over. If there are three servers and 9 jobs, this will
+        //happen three times.
         if(count >= serverArr.size()) {
           count = 0;
         }
-        //step 11
-        s = "OK\n";
-        dos.write(s.getBytes());
-        dos.flush();
-        recieve = br.readLine();
-        //step 7
+        //step 7 - job scheduling
         s = "SCHD " + job + " " + bestserver + "\n";
         dos.write(s.getBytes());
         dos.flush();
@@ -133,34 +137,30 @@ public class client {
       Server j = new Server();
       // comes out like this = joon 0 inactive -1 4 16000 64000 0 0
       //parse the values into pieces. 
+      //get the name
       a = recieve.split(" ");
-      //System.out.println(a[0] + a[1]);
       j.type = a[0];
-      //System.out.println("name = " + j.type);
       // get id
       String l = a[1];
-      //System.out.println("id = " + l);
       Integer la = Integer.parseInt(l);
       j.id = la;
       // get curstarttime
       l = a[3];
-      //System.out.println("bootuptime = " + l);
       j.curstarttime= Integer.parseInt(l);
       // get cores
       l = a[4];
-      //System.out.println("cores = " + l);
       j.cores = Integer.parseInt(l);
       // get memory
       l = a[5];
-      //System.out.println("memory = " + l);
       j.memory = Integer.parseInt(l);
       // get disk
       l = a[6];
-      //System.out.println("disk = " + l);
       j.disk = Integer.parseInt(l);
       l = a[7];
+      //get waiting jobs
       j.wjobs = Integer.parseInt(l);
       l = a[7];
+      //running jobs
       j.rjobs = Integer.parseInt(l);
       aj.add(j);
       count++;
@@ -179,7 +179,7 @@ public class client {
       }
     }
     //stores the values of the same type server into list. 
-    //Uses type instead of cores as it could get different server but same core count. 
+    //Uses type instead of cores as cores would get multiple servers with the same core count. 
     ArrayList<Server> newaj = new ArrayList<Server>();
     for(int i = 0; i<a.size(); i++) {
       if(temp.type.equals(a.get(i).type)) {
