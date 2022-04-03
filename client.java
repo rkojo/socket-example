@@ -99,74 +99,68 @@ public class client {
 
   //used to return to detect jcpl
   public static String getcommand(String s) {
-    String[] a;
-    a = s.split(" ");
-    return a[0];
+    String[] arr;
+    arr = s.split(" ");
+    return arr[0];
   }
 
   //used to find job requirement for core, disk and memory to use in GETS capable 
   public static String jobvalue(String s) {
-    String[] a;
-    a = s.split(" ", 0);
-    return a[4]+" " + a[5]+" " + a[6] + "\n";
+    String[] arr;
+    arr = s.split(" ", 0);
+    return arr[4]+" " + arr[5]+" " + arr[6] + "\n";
   }
   //used to find the id of the job to use to schedule jobs. 
   public static String jobid(String s) {
-    String[] a;
-    a = s.split(" ");
-    return a[2];
+    String[] arr;
+    arr = s.split(" ");
+    return arr[2];
   }
 
   //sees how many capable servers to use in the getscapable loop. 
   public static int howMany(String s) {
-    String[] a;
-    a = s.split(" ");
-    return Integer.parseInt(a[1]);
+    String[] arr;
+    arr = s.split(" ");
+    return Integer.parseInt(arr[1]);
   }
 
   //used to get the list of available servers.
   public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
-    String[] a;
-    ArrayList<Server> aj = new ArrayList<Server>();
+    String[] arr;
+    ArrayList<Server> aList = new ArrayList<Server>();
     dos.write("OK\n".getBytes());
     dos.flush();
     String recieve = new String();
     int count = 0;
     while (count < servercount) {
       recieve = br.readLine();
-      Server j = new Server();
+      Server server = new Server();
       // comes out like this = joon 0 inactive -1 4 16000 64000 0 0
       //parse the values into pieces. 
       //get the name
-      a = recieve.split(" ");
-      j.type = a[0];
+      arr = recieve.split(" ");
+      server.type = arr[0];
       // get id
-      String l = a[1];
-      Integer la = Integer.parseInt(l);
-      j.id = la;
+      String line = arr[1];
+      server.id = Integer.parseInt(line);;
       // get curstarttime
-      l = a[3];
-      j.curstarttime= Integer.parseInt(l);
+      line = arr[3];
+      server.curstarttime= Integer.parseInt(line);
       // get cores
-      l = a[4];
-      j.cores = Integer.parseInt(l);
+      line = arr[4];
+      server.cores = Integer.parseInt(line);
       // get memory
-      l = a[5];
-      j.memory = Integer.parseInt(l);
+      line = arr[5];
+      server.memory = Integer.parseInt(line);
       // get disk
-      l = a[6];
-      j.disk = Integer.parseInt(l);
-      l = a[7];
-      //get waiting jobs
-      j.wjobs = Integer.parseInt(l);
-      l = a[7];
-      //running jobs
-      j.rjobs = Integer.parseInt(l);
-      aj.add(j);
+      line = arr[6];
+      server.disk = Integer.parseInt(line);
+      line= arr[7];
+      aList.add(server);
       count++;
      }
     // return list
-    return aj;
+    return aList;
 
   }
   //find largest amount of servers for LRR
@@ -180,12 +174,12 @@ public class client {
     }
     //stores the values of the same type server into list. 
     //Uses type instead of cores as cores would get multiple servers with the same core count. 
-    ArrayList<Server> newaj = new ArrayList<Server>();
+    ArrayList<Server> list = new ArrayList<Server>();
     for(int i = 0; i<a.size(); i++) {
       if(temp.type.equals(a.get(i).type)) {
-        newaj.add(a.get(i));
+        list.add(a.get(i));
       }
     }
-    return newaj;
+    return list;
   }
 }
