@@ -6,7 +6,6 @@ import java.util.ArrayList;
 public class client {
   public static void main(String args[]) {
     //used to store the values of the biggest servers and keeps them even when looping. 
-    serverArray serverArr = new serverArray();
     try {
       Socket socket = new Socket("127.0.0.1", 50000);
       DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
@@ -22,9 +21,6 @@ public class client {
       dos.flush();
 
       recieve = br.readLine();
-      int count = 0;
-      //used to see if the loop has not looped before. used to store values into serverArray
-      boolean toStore = true;
       //if none, the whole thing is completed. 
       while (recieve.compareTo("NONE") != 0) {
         //step 5
@@ -49,9 +45,6 @@ public class client {
         }
         String job = jobid(recieve); // gets id of job in jobn
 
-        //on the first loop, it saves the servers with the biggest values.
-        //this only needs to happen once as it keeps the server data at the end in serverArr
-        if(toStore == true) {
           //step 7
           s = "GETS Capable " + jobvalue(recieve) +"\n";
           dos.write(s.getBytes());
@@ -66,17 +59,9 @@ public class client {
           dos.flush();
           recieve = br.readLine();
           //stores the best servers only. 
-          serverArr.servers = bigAmount(list);
-        }
-        toStore = false;
         //the best server possible and the id of the server. 
-        String bestserver = serverArr.returnValue(count) + " " +  serverArr.returnInt(count);
-        count++;
-        //used to ensure that it server id does not go over. If there are three servers and 9 jobs, this will
-        //happen three times.
-        if(count >= serverArr.size()) {
-          count = 0;
-        }
+        String bestserver = list.get(0).type + " " +  list.get(0).id;
+
         //step 7 - job scheduling
         s = "SCHD " + job + " " + bestserver + "\n";
         dos.write(s.getBytes());
@@ -162,24 +147,5 @@ public class client {
     // return list
     return aList;
 
-  }
-  //find largest amount of servers for LRR
-  public static ArrayList<Server> bigAmount(ArrayList<Server> a) {
-    //get the biggest core value and stores into temp. Should only be the first value as it is not <=
-    Server temp = a.get(0);
-    for(int i = 1; i<a.size(); i++) {
-      if(temp.cores < a.get(i).cores) {
-        temp = a.get(i);
-      }
-    }
-    //stores the values of the same type server into list. 
-    //Uses type instead of cores as cores would get multiple servers with the same core count. 
-    ArrayList<Server> list = new ArrayList<Server>();
-    for(int i = 0; i<a.size(); i++) {
-      if(temp.type.equals(a.get(i).type)) {
-        list.add(a.get(i));
-      }
-    }
-    return list;
   }
 }
