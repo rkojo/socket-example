@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 
-
 public class client {
   public static void main(String args[]) {
     //used to store the values of the biggest servers and keeps them even when looping. 
@@ -60,7 +59,8 @@ public class client {
           recieve = br.readLine();
           //stores the best servers only. 
         //the best server possible and the id of the server. 
-        String bestserver = list.get(0).type + " " +  list.get(0).id;
+
+        String bestserver = determineStrategy(list, arg[0], );
 
         //step 7 - job scheduling
         s = "SCHD " + job + " " + bestserver + "\n";
@@ -95,6 +95,12 @@ public class client {
     arr = s.split(" ", 0);
     return arr[4]+" " + arr[5]+" " + arr[6] + "\n";
   }
+  //get the amount of cores required for the job.
+  public static int jobCores(String s) {
+    String[] arr;
+    arr = s.split(" ",0);
+    return Integer.parseInt(arr[4]);
+  }
   //used to find the id of the job to use to schedule jobs. 
   public static String jobid(String s) {
     String[] arr;
@@ -127,7 +133,10 @@ public class client {
       server.type = arr[0];
       // get id
       String line = arr[1];
-      server.id = Integer.parseInt(line);;
+      server.id = Integer.parseInt(line);
+      //get status
+      line = arr[2];
+      server.state = line;
       // get curstarttime
       line = arr[3];
       server.curstarttime= Integer.parseInt(line);
@@ -140,12 +149,38 @@ public class client {
       // get disk
       line = arr[6];
       server.disk = Integer.parseInt(line);
+      //get waiting jobs
       line= arr[7];
+      server.wjobs = Integer.parseInt(line);
+      //get running jobs
+      line = arr[8];
+      server.rjobs = Integer.parseInt(line);
+
       aList.add(server);
       count++;
      }
     // return list
     return aList;
+  }
+  public String determineStrategy(ArrayList<Server> s, String arg, int cores) {
+    Server server = null;
+    if(arg.equals("fc")) {
+      firstCapable fc = new firstCapable(s);
+      server = fc.returnServer();
+    }
+    if(arg.equals("fc")) {
+      firstFit ff = new firstFit(s);
+      server = ff.returnServer();
+    }
+    if(arg.equals("bf")) {
+      bestFit bf = new bestFit(s, cores);
+      server = bf.returnServer();
+    }
+    if(arg.equals("wf")) {
+      worstFit wf = new worstFit(s, cores);
+      server = wf.returnServer();
+    }
+    return server.type + " " + server.id;
 
   }
 }

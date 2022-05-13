@@ -8,6 +8,8 @@ public class Server{
   Integer cores;
   int memory;
   int disk;
+  int wjobs;
+  int rjobs;
   public Server() {
 
   }
