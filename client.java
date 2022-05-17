@@ -3,6 +3,7 @@ import java.net.*;
 import java.util.ArrayList;
 
 public class client {
+  static boolean testing = true;
   public static void main(String args[]) {
     //used to store the values of the biggest servers and keeps them even when looping. 
     try {
@@ -46,6 +47,7 @@ public class client {
 
           //step 7
           s = "GETS Capable " + jobvalue(recieve) +"\n";
+          int jobcore = jobCores(recieve);
           dos.write(s.getBytes());
           dos.flush();
           //gets the amount of servers
@@ -53,6 +55,12 @@ public class client {
           int howm = howMany(recieve);
           //step 9 - gets the list of servers.
           ArrayList<Server> list = getsCapable(dos, br, howm);
+          if(testing == true) {
+            for(int i = 0; i<list.size(); i++) {
+              System.out.println(list.get(i).type + " " + list.get(i).id + " " +list.get(i).cores);
+            }
+            testing = false;
+          }
           s = "OK\n";
           dos.write(s.getBytes());
           dos.flush();
@@ -60,7 +68,7 @@ public class client {
           //stores the best servers only. 
         //the best server possible and the id of the server. 
 
-        String bestserver = determineStrategy(list, arg[0], );
+        String bestserver = determineStrategy(list, args[0], jobcore);
 
         //step 7 - job scheduling
         s = "SCHD " + job + " " + bestserver + "\n";
@@ -76,7 +84,6 @@ public class client {
       }
 
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
 
@@ -162,21 +169,25 @@ public class client {
     // return list
     return aList;
   }
-  public String determineStrategy(ArrayList<Server> s, String arg, int cores) {
+  public static String determineStrategy(ArrayList<Server> s, String arg, int cores) {
     Server server = null;
     if(arg.equals("fc")) {
+      //System.out.println("enters fc");
       firstCapable fc = new firstCapable(s);
       server = fc.returnServer();
     }
-    if(arg.equals("fc")) {
+    if(arg.equals("ff")) {
+      //System.out.println("enters ff");
       firstFit ff = new firstFit(s);
       server = ff.returnServer();
     }
     if(arg.equals("bf")) {
+      //System.out.println("enters bf");
       bestFit bf = new bestFit(s, cores);
       server = bf.returnServer();
     }
     if(arg.equals("wf")) {
+      // System.out.println("enters wf");
       worstFit wf = new worstFit(s, cores);
       server = wf.returnServer();
     }

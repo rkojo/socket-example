@@ -11,9 +11,9 @@ public class bestFit implements serverImplementation{
 
     public Server returnServer() {
         Server s = null;
-        int fitness = 0;
+        int fitness = cores ;
         for(int i = 0; i<serverList.size(); i++) {
-            if(serverList.get(i).rjobs == 0 && serverList.get(i).wjobs == 0 && (serverList.get(i).cores - cores > fitness)) {
+            if(serverList.get(i).rjobs == 0 && serverList.get(i).wjobs == 0 && ((serverList.get(i).cores - cores) < fitness)) {
                 s = serverList.get(i);
                 fitness = s.cores - cores;
             }

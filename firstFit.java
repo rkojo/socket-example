@@ -7,15 +7,19 @@ public class firstFit implements serverImplementation {
     }
     public Server returnServer() {
         Server s = null;
+        boolean barrier = true;
         for(int i = 0; i<serverList.size(); i++) {
-            if(serverList.get(i).state.equals("active") || serverList.get(i).state.equals("inactive") && (serverList.get(i).wjobs == 0 && serverList.get(i).rjobs == 0)) {
+            if((serverList.get(i).wjobs == 0 && serverList.get(i).rjobs == 0)) {
+                if(barrier == true) {
                 s = serverList.get(i);
-                break;
-            }
-            if(s == null) {
-                s = serverList.get(0);
+                barrier = false;
+                }
+                //break;
             }
         }
+        if(s == null) {
+            s = serverList.get(0);
+            }
         return s;
     }
 }
