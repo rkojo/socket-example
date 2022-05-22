@@ -67,9 +67,12 @@ public class client {
           recieve = br.readLine();
           //stores the best servers only. 
         //the best server possible and the id of the server. 
-
-        String bestserver = determineStrategy(list,serverArr.servers, args[0], jobcore);
-
+        String bestserver;
+        if(args.length == 0) {
+          bestserver = customStrategy(list, jobcore);
+        } else {
+         bestserver = determineStrategy(list,serverArr.servers, args[0], jobcore);
+        }
         //step 7 - job scheduling
         s = "SCHD " + job + " " + bestserver + "\n";
         dos.write(s.getBytes());
@@ -171,27 +174,32 @@ public class client {
   }
   public static String determineStrategy(ArrayList<Server> s, ArrayList<Server> sa, String arg, int cores) {
     Server server = null;
-    // if(arg.equals("fc")) {
-    //   //System.out.println("enters fc");
-    //   firstCapable fc = new firstCapable(s);
-    //   server = fc.returnServer();
-    // }
-    // if(arg.equals("ff")) {
-    //   //System.out.println("enters ff");
-    //   firstFit ff = new firstFit(s);
-    //   server = ff.returnServer();
-    // }
-    // if(arg.equals("bf")) {
+    if(arg.equals("fc")) {
+      //System.out.println("enters fc");
+      firstCapable fc = new firstCapable(s);
+      server = fc.returnServer();
+    }
+    if(arg.equals("ff")) {
+      //System.out.println("enters ff");
+      firstFit ff = new firstFit(s);
+      server = ff.returnServer();
+    }
+    if(arg.equals("bf")) {
       //System.out.println("enters bf");
       bestFit bf = new bestFit(s, sa, cores);
       server = bf.returnServer();
-    // }
-    // if(arg.equals("wf")) {
-    //   // System.out.println("enters wf");
-    //   worstFit wf = new worstFit(s, cores);
-    //   server = wf.returnServer();
-    // }
+    }
+    if(arg.equals("wf")) {
+      // System.out.println("enters wf");
+      worstFit wf = new worstFit(s,sa, cores);
+      server = wf.returnServer();
+    }
     return server.type + " " + server.id;
-
+  }
+  public static String customStrategy(ArrayList<Server> s, int cores) {
+    Server server = null;
+    customfit cf = new customfit(s, cores);
+    server = cf.returnServer();
+    return server.type + " " + server.id;
   }
 }

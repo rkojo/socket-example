@@ -1,30 +1,36 @@
 import java.util.ArrayList;
 
-public class worstFit implements serverImplementation {
-
+public class worstFit implements serverImplementation{
     ArrayList<Server> serverList;
+    ArrayList<Server> serverarr;
     int cores;
-
-    public worstFit(ArrayList<Server> servers, int cores) {
+    public worstFit (ArrayList<Server> servers, ArrayList<Server> serverarr, int cores) {
         serverList = servers;
+        this.serverarr = serverarr;
         this.cores = cores;
     }
-    
+
     public Server returnServer() {
         Server s = null;
-        int fitness = 0;
+        Integer fitness = -1 ;
+        System.out.println(cores);
         for(int i = 0; i<serverList.size(); i++) {
-            if(serverList.get(i).rjobs == 0 && serverList.get(i).wjobs == 0 && (serverList.get(i).cores - cores > fitness)) {
+            System.out.println(serverList.get(i).type+serverList.get(i).id+serverList.get(i).wjobs + "waiting list" );
+            if(serverList.get(i).rjobs == 0 && serverList.get(i).wjobs == 0 && ((serverList.get(i).cores - cores) > fitness)) {
                 s = serverList.get(i);
                 fitness = s.cores - cores;
             }
         }
         //only happens if there are no servers that have no jobs
         if(s == null) {
-            //gets the largest server
-            s = serverList.get(serverList.size()-1);
-        }
+
+            //gets the smallest server
+           for(int i = 0; i < serverarr.size(); i++) {
+              if((serverarr.get(i).cores - cores > fitness) && serverarr.get(i).cores - cores >= 0) {
+                  s = serverarr.get(i);
+              }
+           }
+                }
         return s;
-    }
-    
+    }   
 }
