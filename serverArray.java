@@ -3,7 +3,6 @@ import java.util.ArrayList;
 public final class serverArray {
     ArrayList<Server> servers;
     //used to store the values of the biggest servers. This is done as gets capable reduces the cores if a job is running. 
-
     public serverArray(){
         servers = null;
     }

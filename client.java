@@ -4,82 +4,165 @@ import java.util.ArrayList;
 
 public class client {
   static boolean testing = true;
+
   public static void main(String args[]) {
     Boolean first = true;
     serverArray serverArr = new serverArray();
-    //used to store the values of the biggest servers and keeps them even when looping. 
+    jobArray job = new jobArray();
+    // used to store the values of the biggest servers and keeps them even when
+    // looping.
     try {
       Socket socket = new Socket("127.0.0.1", 50000);
       DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
       // DataInputStream dis = new DataInputStream(socket.getInputStream());
       BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-     
+
       dos.write("HELO\n".getBytes());
       dos.flush();
 
       String recieve = br.readLine();
-      //authentication 
+      // authentication
       dos.write("AUTH riku\n".getBytes());
       dos.flush();
 
       recieve = br.readLine();
-      //if none, the whole thing is completed. 
+      // if none, the whole thing is completed.
       while (recieve.compareTo("NONE") != 0) {
-        //step 5
+        // step 5
         dos.write("REDY\n".getBytes());
         dos.flush();
         // get step 6
         String s;
         recieve = br.readLine();
-        //jcpl tells status of job, so it should loop until all jobs are done. 
-        if(getcommand(recieve).compareTo("JCPL") == 0) {
-          while(getcommand(recieve).compareTo("JCPL") == 0) {
-            dos.write("REDY\n".getBytes());
-            dos.flush();
-            recieve = br.readLine();
+        // jcpl tells status of job, so it should loop until all jobs are done.
+        if (getcommand(recieve).compareTo("JCPL") == 0) {
+
+          while (getcommand(recieve).compareTo("JCPL") == 0) {
+            for (int i = 0; i < serverArr.servers.size(); i++) {
+              // asks for job count in each server
+              String cntj = "CNTJ " + serverArr.servers.get(i).type + " " + serverArr.servers.get(i).id + " 1" + "\n";
+              dos.write(cntj.getBytes());
+              dos.flush();
+              recieve = br.readLine();
+              int amount = 0;
+              if (recieve.compareTo("") != 0 || recieve.compareTo("0") != 0) {
+                // dos.write("OK\n".getBytes());
+                // dos.flush();
+                // recieve = br.readLine();
+                if (recieve.compareTo("") != 0 || recieve.compareTo("0") != 0) {
+                  amount = howManyJobs(recieve);
+                }
+                int count = 0;
+                // if there are jobs waiting
+                if (amount > 0) {
+                  String lstj = "LSTJ " + serverArr.servers.get(i).type + " " + serverArr.servers.get(i).id + "\n";
+                  dos.write(lstj.getBytes());
+                  dos.flush();
+                  recieve = br.readLine();
+
+                  amount = howMany(recieve);
+                  dos.write("OK\n".getBytes());
+                  dos.flush();
+                  while (amount > count) {
+                    // add amount to waiting jobs
+                    
+                    recieve = br.readLine();
+                    // add to list
+                    jobs tempjob = readJobs(recieve, serverArr.servers.get(i).type, serverArr.servers.get(i).id);
+                    if(tempjob.jobState == 1) {
+                      serverArr.servers.get(i).wjobs++;
+                      job.add(tempjob);
+                    }
+                    count++;
+                  }
+                  dos.write("OK\n".getBytes());
+                  dos.flush();
+                  recieve = br.readLine();
+                }
+              }
+            }
+            if (job.list != null || !job.list.isEmpty()) {
+                ArrayList<Server> inactiveServer = new ArrayList<Server>();
+                for (int k = 0; k < serverArr.servers.size(); k++) {
+                  //add servers that are completely not running.
+                  if (serverArr.servers.get(k).wjobs == 0 && serverArr.servers.get(k).rjobs == 0) {
+                    inactiveServer.add(serverArr.servers.get(k));
+                  }
+                }
+                for(int k = 0; k< serverArr.servers.size(); k++) {
+                  if(serverArr.servers.get(k).wjobs == 0) {
+                    if(!inactiveServer.contains(serverArr.servers.get(k))) {
+                      inactiveServer.add(serverArr.servers.get(k));
+                    }
+                  }
+                }
+                  if(!inactiveServer.isEmpty() || inactiveServer !=null) {
+                  for (int i = 0; i < job.list.size(); i++) {
+                    boolean complete = true;
+                  for(int k = 0; k<inactiveServer.size(); k++) {
+                  if (job.list.get(i).core <= inactiveServer.get(k).cores && job.list.get(i).jobState == 1 && complete == true) {
+                    String migrate = ("MIGJ " + job.list.get(i).jobID + " " + job.list.get(i).srcServer + " "
+                        + job.list.get(i).secServerid + " " + inactiveServer.get(k).type + " " + inactiveServer.get(k).id
+                        + "\n");
+                    //System.out.println("migrated");
+                    dos.write(migrate.getBytes());
+                    dos.flush();
+                    recieve = br.readLine();
+                    complete = false;
+                  }
+                }
+                }
+              }
+            } else {
+              dos.write("REDY\n".getBytes());
+              dos.flush();
+              recieve = br.readLine();
+            }
           }
         }
-        //if the value is none, it quits and breaks out of loop.
-        if(recieve.compareTo("NONE") == 0) {
+        // if the value is none, it quits and breaks out of loop.
+        if (getcommand(recieve).compareTo("NONE") == 0) {
           dos.write("QUIT\n".getBytes());
           dos.flush();
           break;
         }
-        String job = jobid(recieve); // gets id of job in jobn
+        if (getcommand(recieve).compareTo("JOBN") == 0) {
+          String jobToSend = jobid(recieve); // gets id of job in jobn
 
-          //step 7
-          s = "GETS Capable " + jobvalue(recieve) +"\n";
+          // step 7
+          s = "GETS Capable " + jobvalue(recieve) + "\n";
           int jobcore = jobCores(recieve);
           dos.write(s.getBytes());
           dos.flush();
-          //gets the amount of servers
+          // gets the amount of servers
           recieve = br.readLine();
           int howm = howMany(recieve);
-          //step 9 - gets the list of servers.
+          // step 9 - gets the list of servers.
           ArrayList<Server> list = getsCapable(dos, br, howm);
-          if(first == true) {
-          serverArr.servers = list;
-          first = false;
+          if (first == true) {
+            serverArr.servers = list;
+            first = false;
           }
           s = "OK\n";
           dos.write(s.getBytes());
           dos.flush();
           recieve = br.readLine();
-          //stores the best servers only. 
-        //the best server possible and the id of the server. 
-        String bestserver;
-        if(args.length == 0) {
-          bestserver = customStrategy(list, jobcore);
-        } else {
-         bestserver = determineStrategy(list,serverArr.servers, args[0], jobcore);
+          // stores the best servers only.
+          // the best server possible and the id of the server.
+          String bestserver;
+          if (args.length == 0) {
+            bestserver = customStrategy(list, jobcore);
+          } else {
+            bestserver = determineStrategy(list, serverArr.servers, args[0], jobcore);
+          }
+          // step 7 - job scheduling
+          s = "SCHD " + jobToSend + " " + bestserver + "\n";
+          dos.write(s.getBytes());
+          dos.flush();
+          recieve = br.readLine();
         }
-        //step 7 - job scheduling
-        s = "SCHD " + job + " " + bestserver + "\n";
-        dos.write(s.getBytes());
-        dos.flush();
-        recieve = br.readLine();
       }
-      //reads final value.
+      // reads final value.
       String recfinal = br.readLine();
       if (recfinal.equals("QUIT")) {
         dos.close();
@@ -92,41 +175,44 @@ public class client {
 
   }
 
-  //used to return to detect jcpl
+  // used to return to detect jcpl
   public static String getcommand(String s) {
     String[] arr;
     arr = s.split(" ");
     return arr[0];
   }
 
-  //used to find job requirement for core, disk and memory to use in GETS capable 
+  // used to find job requirement for core, disk and memory to use in GETS capable
   public static String jobvalue(String s) {
     String[] arr;
     arr = s.split(" ", 0);
-    return arr[4]+" " + arr[5]+" " + arr[6] + "\n";
+    return arr[4] + " " + arr[5] + " " + arr[6] + "\n";
   }
-  //get the amount of cores required for the job.
+
+  // get the amount of cores required for the job.
   public static int jobCores(String s) {
     String[] arr;
-    arr = s.split(" ",0);
+    arr = s.split(" ", 0);
     return Integer.parseInt(arr[4]);
   }
-  //used to find the id of the job to use to schedule jobs. 
+
+  // used to find the id of the job to use to schedule jobs.
   public static String jobid(String s) {
     String[] arr;
     arr = s.split(" ");
     return arr[2];
   }
 
-  //sees how many capable servers to use in the getscapable loop. 
+  // sees how many capable servers to use in the getscapable loop.
   public static int howMany(String s) {
     String[] arr;
     arr = s.split(" ");
     return Integer.parseInt(arr[1]);
   }
 
-  //used to get the list of available servers.
-  public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount) throws IOException {
+  // used to get the list of available servers.
+  public static ArrayList<Server> getsCapable(DataOutputStream dos, BufferedReader br, int servercount)
+      throws IOException {
     String[] arr;
     ArrayList<Server> aList = new ArrayList<Server>();
     dos.write("OK\n".getBytes());
@@ -137,19 +223,19 @@ public class client {
       recieve = br.readLine();
       Server server = new Server();
       // comes out like this = joon 0 inactive -1 4 16000 64000 0 0
-      //parse the values into pieces. 
-      //get the name
+      // parse the values into pieces.
+      // get the name
       arr = recieve.split(" ");
       server.type = arr[0];
       // get id
       String line = arr[1];
       server.id = Integer.parseInt(line);
-      //get status
+      // get status
       line = arr[2];
       server.state = line;
       // get curstarttime
       line = arr[3];
-      server.curstarttime= Integer.parseInt(line);
+      server.curstarttime = Integer.parseInt(line);
       // get cores
       line = arr[4];
       server.cores = Integer.parseInt(line);
@@ -159,47 +245,71 @@ public class client {
       // get disk
       line = arr[6];
       server.disk = Integer.parseInt(line);
-      //get waiting jobs
-      line= arr[7];
+      // get waiting jobs
+      line = arr[7];
       server.wjobs = Integer.parseInt(line);
-      //get running jobs
+      // get running jobs
       line = arr[8];
       server.rjobs = Integer.parseInt(line);
 
       aList.add(server);
       count++;
-     }
+    }
     // return list
     return aList;
   }
+
   public static String determineStrategy(ArrayList<Server> s, ArrayList<Server> sa, String arg, int cores) {
     Server server = null;
-    if(arg.equals("fc")) {
-      //System.out.println("enters fc");
+    if (arg.equals("fc")) {
+      // System.out.println("enters fc");
       firstCapable fc = new firstCapable(s);
       server = fc.returnServer();
     }
-    if(arg.equals("ff")) {
-      //System.out.println("enters ff");
+    if (arg.equals("ff")) {
+      // System.out.println("enters ff");
       firstFit ff = new firstFit(s);
       server = ff.returnServer();
     }
-    if(arg.equals("bf")) {
-      //System.out.println("enters bf");
+    if (arg.equals("bf")) {
+      // System.out.println("enters bf");
       bestFit bf = new bestFit(s, sa, cores);
       server = bf.returnServer();
     }
-    if(arg.equals("wf")) {
+    if (arg.equals("wf")) {
       // System.out.println("enters wf");
-      worstFit wf = new worstFit(s,sa, cores);
+      worstFit wf = new worstFit(s, sa, cores);
       server = wf.returnServer();
     }
     return server.type + " " + server.id;
   }
+
   public static String customStrategy(ArrayList<Server> s, int cores) {
     Server server = null;
     customfit cf = new customfit(s, cores);
     server = cf.returnServer();
     return server.type + " " + server.id;
+  }
+
+  public static jobs readJobs(String recieve, String server, int id) {
+    String[] arr = recieve.split(" ");
+    jobs temp = new jobs();
+    temp.jobID = Integer.parseInt(arr[0]);
+    temp.jobState = Integer.parseInt(arr[1]);
+    temp.submitTime = Integer.parseInt(arr[2]);
+    temp.startTime = Integer.parseInt(arr[3]);
+    temp.estRunttime = Integer.parseInt(arr[4]);
+    temp.core = Integer.parseInt(arr[5]);
+    temp.memory = Integer.parseInt(arr[6]);
+    temp.disk = Integer.parseInt(arr[7]);
+    temp.srcServer = server;
+    temp.secServerid = id;
+    return temp;
+  }
+
+  public static int howManyJobs(String s) {
+    String[] arr;
+    arr = s.split(" ");
+    return Integer.parseInt(arr[0]);
   }
 }

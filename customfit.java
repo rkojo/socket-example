@@ -32,13 +32,13 @@ public class customfit implements serverImplementation{
             //     }
             // }
             s = serverList.get(0);
-            int fitness = s.cores - cores;
             for(int i = 0; i<serverList.size(); i++) {
-                if(serverList.get(i).wjobs < s.wjobs || (serverList.get(i).cores - cores) < fitness) {
+                if(serverList.get(i).wjobs < s.wjobs) {
                     s = serverList.get(i);
                 }
             }
         }
+        
         return s;
     }
     
