@@ -35,6 +35,7 @@ public class customfit implements serverImplementation{
             for(int i = 0; i<serverList.size(); i++) {
                 if(serverList.get(i).wjobs < s.wjobs) {
                     s = serverList.get(i);
+                    break;
                 }
             }
         }

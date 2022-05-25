@@ -1,14 +1,16 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.*;
 import java.util.ArrayList;
 
 public class client {
   static boolean testing = true;
-
   public static void main(String args[]) {
     Boolean first = true;
     serverArray serverArr = new serverArray();
-    jobArray job = new jobArray();
+
+
+    
     // used to store the values of the biggest servers and keeps them even when
     // looping.
     try {
@@ -36,41 +38,24 @@ public class client {
         recieve = br.readLine();
         // jcpl tells status of job, so it should loop until all jobs are done.
         if (getcommand(recieve).compareTo("JCPL") == 0) {
-
           while (getcommand(recieve).compareTo("JCPL") == 0) {
+            jobArray job = new jobArray();
             for (int i = 0; i < serverArr.servers.size(); i++) {
-              // asks for job count in each server
-              String cntj = "CNTJ " + serverArr.servers.get(i).type + " " + serverArr.servers.get(i).id + " 1" + "\n";
-              dos.write(cntj.getBytes());
-              dos.flush();
-              recieve = br.readLine();
-              int amount = 0;
-              if (recieve.compareTo("") != 0 || recieve.compareTo("0") != 0) {
-                // dos.write("OK\n".getBytes());
-                // dos.flush();
-                // recieve = br.readLine();
-                if (recieve.compareTo("") != 0 || recieve.compareTo("0") != 0) {
-                  amount = howManyJobs(recieve);
-                }
-                int count = 0;
-                // if there are jobs waiting
-                if (amount > 0) {
                   String lstj = "LSTJ " + serverArr.servers.get(i).type + " " + serverArr.servers.get(i).id + "\n";
                   dos.write(lstj.getBytes());
                   dos.flush();
                   recieve = br.readLine();
-
-                  amount = howMany(recieve);
+                  int count = 0;
+                  int amount = howMany(recieve);
                   dos.write("OK\n".getBytes());
                   dos.flush();
+                  if(amount > count) {
                   while (amount > count) {
                     // add amount to waiting jobs
-                    
                     recieve = br.readLine();
                     // add to list
                     jobs tempjob = readJobs(recieve, serverArr.servers.get(i).type, serverArr.servers.get(i).id);
                     if(tempjob.jobState == 1) {
-                      serverArr.servers.get(i).wjobs++;
                       job.add(tempjob);
                     }
                     count++;
@@ -78,48 +63,57 @@ public class client {
                   dos.write("OK\n".getBytes());
                   dos.flush();
                   recieve = br.readLine();
+                } else {
+                  recieve  = br.readLine();
                 }
-              }
-            }
-            if (job.list != null || !job.list.isEmpty()) {
-                ArrayList<Server> inactiveServer = new ArrayList<Server>();
-                for (int k = 0; k < serverArr.servers.size(); k++) {
-                  //add servers that are completely not running.
-                  if (serverArr.servers.get(k).wjobs == 0 && serverArr.servers.get(k).rjobs == 0) {
-                    inactiveServer.add(serverArr.servers.get(k));
-                  }
+                
                 }
-                for(int k = 0; k< serverArr.servers.size(); k++) {
-                  if(serverArr.servers.get(k).wjobs == 0) {
-                    if(!inactiveServer.contains(serverArr.servers.get(k))) {
-                      inactiveServer.add(serverArr.servers.get(k));
+                job.list.sort(new jobCompare());
+                Boolean works = true;
+                  for (int i = 0; i < job.list.size(); i++) {
+                    if( works == true) {
+                    if(job.list.get(i).jobState == 1) {
+                    String getsavailable = ("GETS Capable " + job.list.get(i).core + " " + job.list.get(i).memory + " " + job.list.get(i).disk +"\n");
+                    dos.write(getsavailable.getBytes());
+                    dos.flush();
+                    recieve = br.readLine();
+                    String[] errorCheck = recieve.split(" ");
+                    if(errorCheck[0].compareTo("ERR:") != 0) {
+                    int howmany = howMany(recieve);
+                    ArrayList<Server> available = getsCapable(dos, br, howmany);
+                    dos.write("OK\n".getBytes());
+                    dos.flush();
+                    recieve = br.readLine();
+                    Server bestServer = available.get(0);
+                  for(int k = 1; k<available.size(); k++) {
+                    if( available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores) {
+                      bestServer = available.get(k);
                     }
                   }
-                }
-                  if(!inactiveServer.isEmpty() || inactiveServer !=null) {
-                  for (int i = 0; i < job.list.size(); i++) {
-                    boolean complete = true;
-                  for(int k = 0; k<inactiveServer.size(); k++) {
-                  if (job.list.get(i).core <= inactiveServer.get(k).cores && job.list.get(i).jobState == 1 && complete == true) {
+                  if (job.list.get(i).jobState == 1) {
                     String migrate = ("MIGJ " + job.list.get(i).jobID + " " + job.list.get(i).srcServer + " "
-                        + job.list.get(i).secServerid + " " + inactiveServer.get(k).type + " " + inactiveServer.get(k).id
+                        + job.list.get(i).secServerid + " " + bestServer.type + " " + bestServer.id
                         + "\n");
-                    //System.out.println("migrated");
+                    
+                  
                     dos.write(migrate.getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                    complete = false;
+                    System.out.println(recieve);
+                    break;
                   }
-                }
-                }
+                    
+                    } else {
+                      dos.write("REDY\n".getBytes());
+                      dos.flush();
+                      recieve = br.readLine();
+                      works = false;
+                }   
               }
-            } else {
-              dos.write("REDY\n".getBytes());
-              dos.flush();
-              recieve = br.readLine();
             }
+            } 
           }
-        }
+          }
         // if the value is none, it quits and breaks out of loop.
         if (getcommand(recieve).compareTo("NONE") == 0) {
           dos.write("QUIT\n".getBytes());
@@ -169,9 +163,12 @@ public class client {
         socket.close();
       }
 
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    }catch(
+
+  IOException e)
+  {
+    e.printStackTrace();
+  }
 
   }
 
