@@ -35,7 +35,7 @@ public class client {
         // get step 6
         String s;
         recieve = br.readLine();
-        System.out.println(recieve);
+        //System.out.println(recieve);
         // jcpl tells status of job, so it should loop until all jobs are done.
         if (getcommand(recieve).compareTo("JCPL") == 0) {
           while (getcommand(recieve).compareTo("JCPL") == 0) {
@@ -69,55 +69,47 @@ public class client {
                 
                 }
                 job.list.sort(new jobCompare());
-                Boolean works = true;
                   for (int i = 0; i < job.list.size(); i++) {
-                    if( works == true) {
                     if(job.list.get(i).jobState == 1) {
                     String getsavailable = ("GETS Capable " + job.list.get(i).core + " " + job.list.get(i).memory + " " + job.list.get(i).disk +"\n");
                     dos.write(getsavailable.getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                    String[] errorCheck = recieve.split(" ");
-                    if(errorCheck[0].compareTo("ERR:") != 0) {
                     int howmany = howMany(recieve);
                     ArrayList<Server> available = getsCapable(dos, br, howmany);
                     dos.write("OK\n".getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                    Server bestServer = null;
-                    if(bestServer == null) {
-                      bestServer = available.get(0);
+                    available.sort(new serverCompare());
+                    Server bestServer = available.get(0);
+                    int strength = bestServer.cores - job.list.get(i).core;
                   for(int k = 1; k<available.size(); k++) {
-                    // if(available.get(k).rjobs == 0) {
+                    // if(available.get(k).rjobs < bestServer.rjobs) {
                     //   bestServer = available.get(k);
                     //   break;
-                    // } else 
-                    if(available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores) {
+                    // } 
+                    // else 
+                   
+                    //int strengthchoice = available.get(k).cores - job.list.get(i).core;
+                    //&& strength < strengthchoice 
+                    if((available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores)  ) {
+                      //strength = available.get(k).cores - job.list.get(i).core;
                       bestServer = available.get(k);
                       break;
                     }
                   }
-                }
                   if (job.list.get(i).jobState == 1) {
                     String migrate = ("MIGJ " + job.list.get(i).jobID + " " + job.list.get(i).srcServer + " "
                         + job.list.get(i).secServerid + " " + bestServer.type + " " + bestServer.id
                         + "\n");
-                    
-                  
                     dos.write(migrate.getBytes());
                     dos.flush();
                     recieve = br.readLine();
                     break;
                   }
-                    
-                    } else {
-                      dos.write("REDY\n".getBytes());
-                      dos.flush();
-                      recieve = br.readLine();
-                      works = false;
-                }   
+ 
               }
-            }
+            
             } 
           }
           }

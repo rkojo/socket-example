@@ -12,16 +12,13 @@ public class customfit implements serverImplementation{
     public Server returnServer() {
         serverList.sort(new serverCompare());
         Server s = null;
-        //need to make this not arbitrary
-        // for(int i = 0; i<serverList.size(); i++) {
-        //     System.out.println(serverList.get(i).type + serverList.get(i).id + " "+ serverList.get(i).cores);
-        // }
+
         for(int i = serverList.size()-1; i<0; i--) {
             //just turn all servers on - this takes time so open all no matter the fitness
             //also if the server is empty
             if(serverList.get(i).rjobs == 0 && serverList.get(i).wjobs == 0) {
                 s = serverList.get(i);
-               //break;
+               break;
             }
         }
         if(s == null) {
@@ -32,8 +29,12 @@ public class customfit implements serverImplementation{
             //     }
             // }
             s = serverList.get(0);
+            //int strength = serverList.get(0).cores - cores;
             for(int i = 0; i<serverList.size(); i++) {
-                if(serverList.get(i).wjobs < s.wjobs) {
+                // int serverstrength = serverList.get(i).cores - cores;
+                // && strength < serverstrength
+                if(serverList.get(i).wjobs < s.wjobs )  {
+              //      strength = serverList.get(i).cores - cores;
                     s = serverList.get(i);
                     break;
                 }
