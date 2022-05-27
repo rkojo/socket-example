@@ -1,5 +1,4 @@
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.*;
 import java.util.ArrayList;
 
@@ -36,6 +35,7 @@ public class client {
         // get step 6
         String s;
         recieve = br.readLine();
+        System.out.println(recieve);
         // jcpl tells status of job, so it should loop until all jobs are done.
         if (getcommand(recieve).compareTo("JCPL") == 0) {
           while (getcommand(recieve).compareTo("JCPL") == 0) {
@@ -84,12 +84,20 @@ public class client {
                     dos.write("OK\n".getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                    Server bestServer = available.get(0);
+                    Server bestServer = null;
+                    if(bestServer == null) {
+                      bestServer = available.get(0);
                   for(int k = 1; k<available.size(); k++) {
-                    if( available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores) {
+                    // if(available.get(k).rjobs == 0) {
+                    //   bestServer = available.get(k);
+                    //   break;
+                    // } else 
+                    if(available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores) {
                       bestServer = available.get(k);
+                      break;
                     }
                   }
+                }
                   if (job.list.get(i).jobState == 1) {
                     String migrate = ("MIGJ " + job.list.get(i).jobID + " " + job.list.get(i).srcServer + " "
                         + job.list.get(i).secServerid + " " + bestServer.type + " " + bestServer.id
@@ -99,7 +107,6 @@ public class client {
                     dos.write(migrate.getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                    System.out.println(recieve);
                     break;
                   }
                     
