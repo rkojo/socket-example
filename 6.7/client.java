@@ -40,37 +40,66 @@ public class client {
         if (getcommand(recieve).compareTo("JCPL") == 0) {
           while (getcommand(recieve).compareTo("JCPL") == 0) {
             jobArray job = new jobArray();
-            for (int i = 0; i < serverArr.servers.size(); i++) {
-                  String lstj = "LSTJ " + serverArr.servers.get(i).type + " " + serverArr.servers.get(i).id + "\n";
-                  dos.write(lstj.getBytes());
+            ArrayList<Server> waitingServers = new ArrayList<Server>();
+                  String getall = "GETS All\n";
+                  dos.write(getall.getBytes());
                   dos.flush();
                   recieve = br.readLine();
-                  int count = 0;
                   int amount = howMany(recieve);
                   dos.write("OK\n".getBytes());
                   dos.flush();
-                  if(amount > count) {
-                  while (amount > count) {
-                    // add amount to waiting jobs
-                    recieve = br.readLine();
-                    // add to list
-                    jobs tempjob = readJobs(recieve, serverArr.servers.get(i));
-                    if(tempjob.jobState == 1) {
-                      job.add(tempjob);
-                    }
-                    count++;
+                  ArrayList<Server> allServers = new ArrayList<Server>();
+                  
+                  if(amount > 0) {
+                    allServers = getsCapable(dos, br, amount);
                   }
+                  int average = 0;
+                  for(int i = 0; i<allServers.size(); i++) {
+                    average = average + allServers.get(i).curstarttime;
+                  }
+                  average = average/allServers.size();
+                  for(int i = 0; i<allServers.size();i++) {
+                    if(allServers.get(i).curstarttime > average) {
+                      waitingServers.add(allServers.get(i));
+                    }
+                  }
+                  // dos.write("OK\n".getBytes());
+                  // dos.flush();
+                  recieve = br.readLine();
+                  for(int i = 0; i<allServers.size();i++) {
+                    if(allServers.get(i).wjobs > 0) {
+                      waitingServers.add(allServers.get(i));
+                    }
+                  }
+
+                for(int i = 0; i<waitingServers.size(); i++ ){
+                  String lstj = "LSTJ " + waitingServers.get(i).type + " " + waitingServers.get(i).id + "\n";
+                  dos.write(lstj.getBytes());
+                  dos.flush();
+                  recieve = br.readLine();
+                  System.out.println(recieve);
+                  int count = howMany(recieve);
+                  dos.write("OK\n".getBytes());
+                  dos.flush();
+                  if(count > 0) {
+                  for(int k = 0; k<count; k++) {
+                    recieve = br.readLine();
+                    jobs temp = readJobs(recieve, waitingServers.get(i));
+                    if(temp.jobState != 2) {
+                    job.add(temp);
+                    }
+                  } 
                   dos.write("OK\n".getBytes());
                   dos.flush();
                   recieve = br.readLine();
                 } else {
-                  recieve  = br.readLine();
+                  recieve = br.readLine();
                 }
-                
-                }
+              }
+                if(job.list.size() > 0) {
                 job.list.sort(new jobCompare());
                   for (int i = 0; i < job.list.size(); i++) {
-                    if(job.list.get(i).jobState == 1) {
+                    if(job.list.get(i).jobState != 2) {
                     String getsavailable = ("GETS Capable " + job.list.get(i).core + " " + job.list.get(i).memory + " " + job.list.get(i).disk +"\n");
                     dos.write(getsavailable.getBytes());
                     dos.flush();
@@ -81,35 +110,32 @@ public class client {
                     dos.flush();
                     recieve = br.readLine();
                     available.sort(new serverCompare());
-                    Server bestServer = job.list.get(i).srcServer;
-                   
-                  for(int k = 0; k<available.size(); k++) {
-                    if(available.get(k).state.equals("active") && available.get(k).wjobs == 0) {
-                      bestServer = available.get(k);
+                    Server bestServer = available.get(0);
+                    int strength = bestServer.cores - job.list.get(i).core;
+                    for(int k = 1; k<available.size(); k++) {
+                      // if(available.get(k).rjobs < bestServer.rjobs) {
+                      //   bestServer = available.get(k);
+                      //   break;
+                      // } 
+                      // else 
+                     
+                      //int strengthchoice = available.get(k).cores - job.list.get(i).core;
+                      //&& strength < strengthchoice 
+                      if((available.get(k).wjobs < bestServer.wjobs && job.list.get(i).core <= available.get(k).cores)  ) {
+                        //strength = available.get(k).cores - job.list.get(i).core;
+                        bestServer = available.get(k);
+                        
+                      }
                     }
-                    if(available.get(k).state.equals("idle")) {
-                      bestServer = available.get(k);
-                      break;
-                    }
-                    if((available.get(k).wjobs < bestServer.wjobs)  ) {
-                      bestServer = available.get(k);
-                      break;
-                    }
-
-                  }
-                  if (bestServer != job.list.get(i).srcServer) {
                     String migrate = ("MIGJ " + job.list.get(i).jobID + " " + job.list.get(i).srcServer.type + " "
                         + job.list.get(i).srcServer.id + " " + bestServer.type + " " + bestServer.id
                         + "\n");
                     dos.write(migrate.getBytes());
                     dos.flush();
                     recieve = br.readLine();
-                   
-                  }
- 
               }
-            
             } 
+          }
           }
           }
         // if the value is none, it quits and breaks out of loop.
@@ -120,7 +146,6 @@ public class client {
         }
         if (getcommand(recieve).compareTo("JOBN") == 0) {
           String jobToSend = jobid(recieve); // gets id of job in jobn
-
           // step 7
           s = "GETS Capable " + jobvalue(recieve) + "\n";
           int jobcore = jobCores(recieve);
@@ -142,7 +167,7 @@ public class client {
           // stores the best servers only.
           // the best server possible and the id of the server.
           String bestserver;
-          if (args.length == 0 || args == null) {
+          if (args.length == 0) {
             bestserver = customStrategy(list, jobcore);
           } else {
             bestserver = determineStrategy(list, serverArr.servers, args[0], jobcore);
@@ -150,6 +175,9 @@ public class client {
           // step 7 - job scheduling
           s = "SCHD " + jobToSend + " " + bestserver + "\n";
           dos.write(s.getBytes());
+          dos.flush();
+          recieve = br.readLine();
+                    dos.write("REDY\n".getBytes());
           dos.flush();
           recieve = br.readLine();
         }
@@ -298,7 +326,6 @@ public class client {
     temp.memory = Integer.parseInt(arr[6]);
     temp.disk = Integer.parseInt(arr[7]);
     temp.srcServer = server;
-    
     return temp;
   }
 }

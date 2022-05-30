@@ -1,4 +1,6 @@
 public class jobs {
+    //used in LSTJ commands store jobs
+     
     int jobID;
     int jobState;
     int submitTime;
@@ -7,8 +9,8 @@ public class jobs {
     int core;
     int memory;
     int disk;
-    String srcServer;
-    int secServerid;
+    Server srcServer;
+    
     
     public jobs() {
         
