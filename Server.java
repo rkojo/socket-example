@@ -1,4 +1,5 @@
-public class Server{
+
+public class Server {
   //used in gets capable method to allow it to be stores in serverArray. 
   //based on ds-sim user guide.
   String type;
@@ -13,5 +14,6 @@ public class Server{
   public Server() {
 
   }
+  
 
 }
